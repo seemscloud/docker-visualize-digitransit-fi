@@ -23,7 +23,7 @@ RUN python3 -m venv venv && \
     pip3 install kafka-python prometheus-client && \
     mkdir -p app
 
-RUN pip3 install paho-mqtt certifi
+RUN pip3 install paho-mqtt certifi geopy
 
 COPY ./source app
 COPY docker-entrypoint.sh .
