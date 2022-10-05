@@ -21,3 +21,5 @@ rpk topic create filebeat \
 ![img.png](docs/before.png)
 
 ![img.png](docs/after.png)
+
+![img.png](docs/details.png)
