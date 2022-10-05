@@ -18,4 +18,6 @@ rpk topic create filebeat \
   --topic-config retention.bytes=-1
 ```
 
-![img.png](docs/img.png)
+![img.png](docs/before.png)
+
+![img.png](docs/after.png)
