@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  console:
+    build:
+      context: ./console
+    container_name: console
+    hostname: console
+    ports:
+      - "8080:8080"
+    restart: always
+    volumes:
+      - ${PWD}/console/config.yaml:/app/config.yaml:ro
+  redpanda:
+    image: docker.redpanda.com/vectorized/redpanda:latest
+    container_name: redpanda
+    hostname: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - '0'
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:29092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:9092,OUTSIDE://localhost:29092
+      - --pandaproxy-addr
+      - PLAINTEXT://0.0.0.0:8082,OUTSIDE://0.0.0.0:28082
+      - --advertise-pandaproxy-addr
+      - PLAINTEXT://redpanda:8082,OUTSIDE://localhost:82082
+  producer:
+    hostname: producer
+    deploy:
+      replicas: 1
+    build:
+      context: ./producer
+    restart: always
+    environment:
+      - BOOTSTRAP_SERVERS=redpanda:9092,
+      - TOPIC_NAME=filebeat
+      - INIT_DELAY=0
+      - BATCH_SIZE=16384
+      - LINGER_MS=0
+      - COMPRESSION=None
+      - MESSAGE_SIZE=1024
+      - ACKS=all
+      - GROUP_NAME=seemscloud
+      - PERCENTAGE_VALUE=4.0
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/
+      - LOG_LEVEL=INFO
+      - MQTT_PROTO=mqtts
+      - MQTT_SERVER=mqtt.hsl.fi
+      - MQTT_PORT=8883
+      - MQTT_TOPIC=/hfp/v2/journey/ongoing/vp/#
+  prometheus:
+    build:
+      context: ./prometheus
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - ${PWD}/prometheus/files/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${PWD}/prometheus/entrypoint.sh:/entrypoint.sh:ro
+    restart: always
+  grafana:
+    build:
+      context: ./grafana
+    container_name: grafana
+    hostname: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${PWD}/grafana/files/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml
+      - ${PWD}/grafana/files/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ${PWD}/grafana/files/digitransit-fi.json:/var/lib/grafana/dashboards/digitransit-fi.json
